@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Login</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #74ebd5, #9face6);
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Heading outside the box */
+        h2 {
+            font-size: 32px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            animation: fadeInDown 1.5s ease;
+        }
+
+        .box {
+            background: white;
+            width: 350px;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: fadeInUp 2s ease;
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid gray;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        button {
+            padding: 12px;
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        p {
+            color: red;
+            margin: 0;
+            height: 18px;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Heading outside the box -->
+    <h2>User Login</h2>
+
+    <!-- Box containing only inputs -->
+    <div class="box">
+        <input type="text" id="rationCard" placeholder="Ration Card Number">
+        <input type="text" id="name" placeholder="Name">
+        <input type="text" id="phone" placeholder="Phone Number">
+        <p id="msg"></p>
+        <button id="proceed">Proceed</button>
+    </div>
+
+<script>
+document.getElementById('proceed').addEventListener('click', async function() {
+    const cardNumber = document.getElementById('rationCard').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const msg = document.getElementById('msg');
+    msg.textContent = "";
+
+    if (!cardNumber || !name || !phone) {
+        msg.textContent = "Please fill all details!";
+        return;
+    }
+
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cardNumber, name, phone })
+        });
+
+        const data = await response.json();
+        msg.textContent = data.message;
+
+        if (data.success) {
+            // Login successful → redirect to select slot page
+            window.location.href = 'select.html?card=' + cardNumber;
+        }
+
+    } catch (error) {
+        msg.textContent = "Cannot connect to server.";
+        console.error(error);
+    }
+});
+</script>
+</body>
+</html>

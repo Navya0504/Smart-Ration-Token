@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ration System</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            padding: 50px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #74ebd5, #9face6);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            animation: fadeInDown 1.5s ease;
+        }
+
+        button {
+            padding: 14px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            animation: fadeInUp 2s ease;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: scale(1.08);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Floating animation image */
+        .float-img {
+            position: absolute;
+            width: 200px;
+            height: auto;
+            opacity: 0.9;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .img1 {
+            top: 10%;
+            left: 10%;
+        }
+
+        .img2 {
+            bottom: 15%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Animated images (you can replace image paths) -->
+    <img src="images/ration1.png.jpeg" class="float-img img1">
+    <img src="images/ration2.png.jpeg" class="float-img img2">
+
+    <h1>Welcome to Smart Ration System</h1>
+    <button onclick="location.href='login.html'">Login / Register</button>
+
+</body>
+</html>

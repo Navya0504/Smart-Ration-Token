@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Booking Confirmation</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 50px;
+            background: linear-gradient(135deg, #89f7fe, #66a6ff);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .box {
+            background: white;
+            width: 350px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: fadeInUp 1.5s ease;
+        }
+
+        h2 {
+            color: #4CAF50;
+            font-size: 28px;
+            margin-bottom: 20px;
+            animation: fadeInDown 1.5s ease;
+        }
+
+        p {
+            font-size: 16px;
+            margin: 10px 0;
+            color: #333;
+            animation: fadeIn 2s ease;
+        }
+
+        #message {
+            color: #555;
+            font-size: 15px;
+            margin-top: 20px;
+            animation: fadeIn 2.5s ease;
+        }
+
+        button {
+            padding: 12px;
+            width: 50%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Floating decorative images */
+        .float-img {
+            position: absolute;
+            width: 200px;
+            height: auto;
+            opacity: 0.9;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .img1 { top: 10%; left: 5%; }
+        .img2 { bottom: 15%; right: 10%; animation-delay: 2s; }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h2>Booking Confirmation</h2>
+        <p id="sessionInfo">Session: </p>
+        <p id="slotInfo">Slot: </p>
+        <p id="tokenInfo">Token Number: </p>
+        <p id="message"></p>
+        <button id="homeBtn">Back to Home</button>
+    </div>
+
+    <!-- Floating images -->
+    <img src="images/ration5.png.jpeg" class="float-img img1">
+    <img src="images/ration6.png.jpeg" class="float-img img2">
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const card = params.get('card');
+const date = params.get('date');
+
+if(!card || !date) window.location.href = 'login.html';
+
+const sessionEl = document.getElementById('sessionInfo');
+const slotEl = document.getElementById('slotInfo');
+const tokenEl = document.getElementById('tokenInfo');
+const messageEl = document.getElementById('message');
+
+async function loadBooking(){
+    try {
+        const resp = await fetch(`/bookingDetails?card=${card}&date=${date}`);
+        const data = await resp.json();
+        if(data.success){
+            sessionEl.textContent = "Session: " + data.booking.session.charAt(0).toUpperCase() + data.booking.session.slice(1) + " (" + (data.booking.session === 'morning' ? '9:00-12:00' : '4:00-7:00') + ")";
+            slotEl.textContent = "Slot: " + data.booking.slot;
+            tokenEl.textContent = "Token Number: " + data.booking.token;
+            messageEl.textContent = "You have successfully booked your slot. You will receive an SMS with your token number. Please go to your ration center at the selected time and date.";
+        } else {
+            sessionEl.textContent = "";
+            slotEl.textContent = "";
+            tokenEl.textContent = "";
+            messageEl.textContent = "";
+            alert(data.message);
+            window.location.href = 'login.html';
+        }
+    } catch(err){
+        console.error(err);
+        alert("Cannot fetch booking details.");
+        window.location.href = 'login.html';
+    }
+}
+
+loadBooking();
+
+document.getElementById('homeBtn').addEventListener('click', ()=>{
+    window.location.href = 'login.html';
+});
+</script>
+</body>
+</html>
