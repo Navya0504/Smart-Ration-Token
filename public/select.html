@@ -5,231 +5,209 @@
     <style>
         body {
             font-family: Arial;
-            text-align: center;
             min-height: 100vh;
             margin: 0;
             padding: 40px;
             background: linear-gradient(135deg, #89f7fe, #66a6ff);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
         }
 
         .box {
             background: white;
-            width: 350px;
+            width: 360px;
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            animation: fadeInUp 1.5s ease;
+            text-align: center;
         }
 
         h2 {
-            font-size: 28px;
             color: #2c3e50;
-            margin-bottom: 20px;
-            animation: fadeInDown 1.5s ease;
-        }
-
-        input, select {
-            width: 90%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid gray;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, select:focus {
-            border-color: #4CAF50;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-        }
-
-        button {
-            padding: 12px;
-            width: 100%;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        button:hover {
-            background: #45a049;
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
 
         p {
+            font-size: 14px;
+            margin: 6px 0;
+        }
+
+        input, select, button {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid gray;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #msg {
             color: red;
-            margin: 0;
             height: 18px;
         }
 
-        /* Highlight recommended slot */
         option.recommended {
             background-color: #d1ffd6;
             font-weight: bold;
         }
-
-        /* Floating decorative images */
-        .float-img {
-            position: absolute;
-            width: 200px;
-            height: auto;
-            opacity: 0.9;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .img1 { top: 10%; left: 5%; }
-        .img2 { bottom: 15%; right: 10%; animation-delay: 2s; }
-
-        /* Animations */
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-40px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
-        }
     </style>
 </head>
+
 <body>
 
-    <div class="box">
-        <h2>Select Your Slot</h2>
-        <input type="date" id="date">
-        <select id="session">
-            <option value="">Select Session</option>
-            <option value="morning">Morning (9:00-12:00)</option>
-            <option value="evening">Evening (4:00-7:00)</option>
-        </select>
-        <select id="slot"><option value="">Select Slot</option></select>
-        <button id="confirm">Confirm Token</button>
-        <p id="msg"></p>
-    </div>
+<div class="box">
+    <h2>Select Your Slot</h2>
 
-    <!-- Floating images -->
-    <img src="images/ration3.png.jpeg" class="float-img img1">
-    <img src="images/ration4.png.jpeg" class="float-img img2">
+    <p>
+        <b>Guaranteed Ration Days this month:</b><br>
+        <span id="allowedDaysText">Loading...</span>
+    </p>
+
+    <input type="date" id="date">
+
+    <select id="session">
+        <option value="">Select Session</option>
+        <option value="morning">Morning (9:00–12:00)</option>
+        <option value="evening">Evening (4:00–7:00)</option>
+    </select>
+
+    <select id="slot">
+        <option value="">Select Slot</option>
+    </select>
+
+    <button id="confirm">Confirm Token</button>
+    <p id="msg"></p>
+</div>
 
 <script>
+/* ---------------- BASIC ---------------- */
 const params = new URLSearchParams(window.location.search);
-const card = params.get('card');
-if(!card) window.location.href='login.html';
+const card = params.get("card");
+if(!card) window.location.href = "login.html";
 
-const dateInput = document.getElementById('date');
-const sessionSelect = document.getElementById('session');
-const slotSelect = document.getElementById('slot');
-const msg = document.getElementById('msg');
+const dateInput = document.getElementById("date");
+const sessionSelect = document.getElementById("session");
+const slotSelect = document.getElementById("slot");
+const msg = document.getElementById("msg");
+const allowedDaysText = document.getElementById("allowedDaysText");
 
-dateInput.min = new Date().toISOString().split('T')[0];
+let allowedDays = [];
 
+/* ---------------- FETCH ALLOWED DAYS ---------------- */
+async function loadAllowedDays(){
+    const resp = await fetch("/allowedDays");
+    const data = await resp.json();
+
+    allowedDays = data.days; // array of YYYY-MM-DD
+    allowedDaysText.textContent = allowedDays.join(", ");
+}
+
+/* ---------------- CHECK USER SELECTION ---------------- */
+async function loadUserSelection(){
+    const resp = await fetch(`/bookingDetails?card=${card}`);
+    const data = await resp.json();
+
+    if(data.selectedDate){
+        dateInput.value = data.selectedDate;
+        dateInput.disabled = true;
+        msg.textContent = "Ration day already fixed for this month.";
+    }
+}
+
+/* ---------------- DATE VALIDATION ---------------- */
+dateInput.addEventListener("change", () => {
+    if(!allowedDays.includes(dateInput.value)){
+        msg.textContent = "You can select only the allowed ration days.";
+        dateInput.value = "";
+    } else {
+        msg.textContent = "";
+    }
+});
+
+/* ---------------- SLOT DATA ---------------- */
 const slots = {
-    morning:["9:00-9:30","9:30-10:00","10:00-10:30","10:30-11:00","11:00-11:30","11:30-12:00"],
-    evening:["4:00-4:30","4:30-5:00","5:00-5:30","5:30-6:00","6:00-6:30","6:30-7:00"]
+    morning: ["9:00-9:30","9:30-10:00","10:00-10:30","10:30-11:00","11:00-11:30","11:30-12:00"],
+    evening: ["4:00-4:30","4:30-5:00","5:00-5:30","5:30-6:00","6:00-6:30","6:30-7:00"]
 };
 
 const maxPerSlot = 10;
 
+/* ---------------- UPDATE SLOTS ---------------- */
 async function updateSlots(){
     slotSelect.innerHTML = '<option value="">Select Slot</option>';
-    msg.textContent = '';
 
-    const s = sessionSelect.value;
     const d = dateInput.value;
-    if(!d){ msg.textContent = "Select a date"; return; }
+    const s = sessionSelect.value;
+    if(!d || !s) return;
 
-    try {
-        const userBookingResp = await fetch(`/bookingDetails?card=${card}&date=${d}`);
-        const userBookingData = await userBookingResp.json();
-        if(userBookingData.success){
-            msg.textContent = "You already booked for this date!";
-            sessionSelect.value = '';
-            return;
+    const results = await Promise.all(slots[s].map(async sl => {
+        const r = await fetch(`/availableSlots?date=${d}&session=${s}&slot=${sl}`);
+        const data = await r.json();
+        return { slot: sl, count: data.count || 0 };
+    }));
+
+    let recommended = results[0].slot;
+    let min = results[0].count;
+
+    results.forEach(r => {
+        if(r.count < min){
+            min = r.count;
+            recommended = r.slot;
         }
-    } catch(err){
-        console.error(err);
-    }
+    });
 
-    if(slots[s]){
-        const slotPromises = slots[s].map(async sl => {
-            try {
-                const slotResp = await fetch(`/availableSlots?date=${d}&session=${s}&slot=${sl}`);
-                const slotData = await slotResp.json();
-                const count = slotData.count || 0;
-                return { slot: sl, count };
-            } catch(err){
-                return { slot: sl, count: 0 };
-            }
-        });
+    results.forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r.slot;
+        opt.textContent = `${r.slot} (${r.count}/${maxPerSlot})`;
+        if(r.count >= maxPerSlot) opt.disabled = true;
+        if(r.slot === recommended) opt.classList.add("recommended");
+        slotSelect.appendChild(opt);
+    });
 
-        const slotResults = await Promise.all(slotPromises);
-
-        // Find AI recommended slot (least booked)
-        let recommendedSlot = slotResults[0].slot;
-        let minCount = slotResults[0].count;
-        slotResults.forEach(slObj => {
-            if(slObj.count < minCount){
-                minCount = slObj.count;
-                recommendedSlot = slObj.slot;
-            }
-        });
-
-        slotResults.forEach(slObj => {
-            const opt = document.createElement('option');
-            opt.value = slObj.slot;
-            opt.textContent = `${slObj.slot} (${slObj.count}/${maxPerSlot})`;
-            if(slObj.count >= maxPerSlot) opt.disabled = true;
-            if(slObj.slot === recommendedSlot) opt.classList.add('recommended'); // highlight recommended
-            slotSelect.appendChild(opt);
-        });
-
-        // Automatically select recommended slot
-        slotSelect.value = recommendedSlot;
-    }
+    slotSelect.value = recommended;
 }
 
-sessionSelect.addEventListener('change', updateSlots);
-dateInput.addEventListener('change', updateSlots);
+sessionSelect.addEventListener("change", updateSlots);
 
-document.getElementById('confirm').addEventListener('click', async ()=>{
+/* ---------------- CONFIRM ---------------- */
+document.getElementById("confirm").addEventListener("click", async () => {
     const d = dateInput.value;
     const s = sessionSelect.value;
     const sl = slotSelect.value;
 
-    if(!d || !s || !sl){ msg.textContent = "Fill all details"; return; }
+    if(!d || !s || !sl){
+        msg.textContent = "Fill all details";
+        return;
+    }
 
-    try {
-        const resp = await fetch('/book', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ card, date: d, session: s, slot: sl })
-        });
-        const data = await resp.json();
-        msg.textContent = data.message;
-        if(data.success){
-            window.location.href = `confirm.html?card=${card}&date=${d}`;
-        }
-    } catch(err){
-        console.error(err);
-        msg.textContent = "Cannot connect to server.";
+    const resp = await fetch("/book", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ card, date: d, session: s, slot: sl })
+    });
+
+    const data = await resp.json();
+    msg.textContent = data.message;
+
+    if(data.success){
+        window.location.href = `confirm.html?card=${card}&date=${d}`;
     }
 });
+
+/* ---------------- INIT ---------------- */
+(async () => {
+    await loadAllowedDays();
+    await loadUserSelection();
+})();
 </script>
+
 </body>
 </html>
