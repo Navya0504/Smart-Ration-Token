@@ -100,24 +100,46 @@ const allowedDaysText = document.getElementById("allowedDaysText");
 
 let allowedDays = [];
 
+/* ---------------- CURRENT MONTH ---------------- */
+const today = new Date();
+const monthKey = today.toISOString().slice(0,7); // YYYY-MM
+
 /* ---------------- FETCH ALLOWED DAYS ---------------- */
 async function loadAllowedDays(){
-    const resp = await fetch("/allowedDays");
-    const data = await resp.json();
+    try {
+        const resp = await fetch(`/allowedDays?month=${monthKey}`);
+        const data = await resp.json();
 
-    allowedDays = data.days; // array of YYYY-MM-DD
-    allowedDaysText.textContent = allowedDays.join(", ");
+        if(data.success){
+            allowedDays = data.days; // ["2026-01-05", "2026-01-15", "2026-01-25"]
+            allowedDaysText.textContent = allowedDays.join(", ");
+
+            // Optional: restrict date picker to allowed days
+            dateInput.setAttribute("min", allowedDays[0]);
+            dateInput.setAttribute("max", allowedDays[allowedDays.length-1]);
+        } else {
+            allowedDaysText.textContent = "No allowed days set for this month";
+        }
+    } catch(err){
+        allowedDaysText.textContent = "Error fetching days";
+        console.error(err);
+    }
 }
 
 /* ---------------- CHECK USER SELECTION ---------------- */
 async function loadUserSelection(){
-    const resp = await fetch(`/bookingDetails?card=${card}`);
-    const data = await resp.json();
+    try {
+        const resp = await fetch(`/bookingDetails?card=${card}&month=${monthKey}`);
+        const data = await resp.json();
 
-    if(data.selectedDate){
-        dateInput.value = data.selectedDate;
-        dateInput.disabled = true;
-        msg.textContent = "Ration day already fixed for this month.";
+        if(data.success){
+            const bookedDate = data.booking.date;
+            dateInput.value = bookedDate;
+            dateInput.disabled = true;
+            msg.textContent = "Ration day already fixed for this month.";
+        }
+    } catch(err){
+        console.error(err);
     }
 }
 
@@ -136,43 +158,40 @@ const slots = {
     morning: ["9:00-9:30","9:30-10:00","10:00-10:30","10:30-11:00","11:00-11:30","11:30-12:00"],
     evening: ["4:00-4:30","4:30-5:00","5:00-5:30","5:30-6:00","6:00-6:30","6:30-7:00"]
 };
-
 const maxPerSlot = 10;
 
 /* ---------------- UPDATE SLOTS ---------------- */
 async function updateSlots(){
     slotSelect.innerHTML = '<option value="">Select Slot</option>';
-
     const d = dateInput.value;
     const s = sessionSelect.value;
     if(!d || !s) return;
 
-    const results = await Promise.all(slots[s].map(async sl => {
-        const r = await fetch(`/availableSlots?date=${d}&session=${s}&slot=${sl}`);
-        const data = await r.json();
-        return { slot: sl, count: data.count || 0 };
-    }));
+    try {
+        const results = await Promise.all(slots[s].map(async sl => {
+            const r = await fetch(`/availableSlots?date=${d}&session=${s}&slot=${sl}`);
+            const data = await r.json();
+            return { slot: sl, count: data.count || 0 };
+        }));
 
-    let recommended = results[0].slot;
-    let min = results[0].count;
+        let recommended = results[0].slot;
+        let min = results[0].count;
+        results.forEach(r => { if(r.count < min){ min = r.count; recommended = r.slot; } });
 
-    results.forEach(r => {
-        if(r.count < min){
-            min = r.count;
-            recommended = r.slot;
-        }
-    });
+        results.forEach(r => {
+            const opt = document.createElement("option");
+            opt.value = r.slot;
+            opt.textContent = `${r.slot} (${r.count}/${maxPerSlot})`;
+            if(r.count >= maxPerSlot) opt.disabled = true;
+            if(r.slot === recommended) opt.classList.add("recommended");
+            slotSelect.appendChild(opt);
+        });
 
-    results.forEach(r => {
-        const opt = document.createElement("option");
-        opt.value = r.slot;
-        opt.textContent = `${r.slot} (${r.count}/${maxPerSlot})`;
-        if(r.count >= maxPerSlot) opt.disabled = true;
-        if(r.slot === recommended) opt.classList.add("recommended");
-        slotSelect.appendChild(opt);
-    });
+        slotSelect.value = recommended;
 
-    slotSelect.value = recommended;
+    } catch(err){
+        console.error(err);
+    }
 }
 
 sessionSelect.addEventListener("change", updateSlots);
@@ -188,17 +207,21 @@ document.getElementById("confirm").addEventListener("click", async () => {
         return;
     }
 
-    const resp = await fetch("/book", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ card, date: d, session: s, slot: sl })
-    });
+    try {
+        const resp = await fetch("/book", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ card, date: d, session: s, slot: sl })
+        });
+        const data = await resp.json();
+        msg.textContent = data.message;
 
-    const data = await resp.json();
-    msg.textContent = data.message;
-
-    if(data.success){
-        window.location.href = `confirm.html?card=${card}&date=${d}`;
+        if(data.success){
+            window.location.href = `confirm.html?card=${card}&date=${d}`;
+        }
+    } catch(err){
+        console.error(err);
+        msg.textContent = "Server error";
     }
 });
 
